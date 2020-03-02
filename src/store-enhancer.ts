@@ -2,14 +2,14 @@ import * as redux from 'redux';
 
 import * as loop from './loop';
 
-export type LoopReducer<S, A extends redux.Action<any>> = (
+export type Reducer<S, A extends redux.Action<any>> = (
   state: S | undefined,
   action: A,
 ) => loop.Loop<S, A> | S;
 
 function liftReducer<S, A extends redux.Action<any>>(
   actionQueue: A[],
-  reducer: LoopReducer<S, A>,
+  reducer: Reducer<S, A>,
 ): redux.Reducer<S, A> {
   return (s: S | undefined, a: A) => {
     const { state, actions } = loop.liftState(reducer(s, a));
@@ -36,7 +36,7 @@ function liftDispatch<A extends redux.Action<any>>(
 }
 
 export function storeEnhancer<S, A extends redux.Action<any>>(next: any) {
-  return (reducer: LoopReducer<S, A>, initialState: S, enhancer: any) => {
+  return (reducer: Reducer<S, A>, initialState: S, enhancer: any) => {
     const actionQueue: any[] = [];
     const store = next(
       liftReducer(actionQueue, reducer),
@@ -55,16 +55,17 @@ export function storeEnhancer<S, A extends redux.Action<any>>(next: any) {
 }
 
 export function createStore<S, A extends redux.Action<any>, Ext, StateExt>(
-  reducer: LoopReducer<S, A>,
+  reducer: Reducer<S, A>,
   initialState: redux.PreloadedState<S>,
   anotherEnhancer?: redux.StoreEnhancer<Ext, StateExt>,
 ) {
+  const storeEnhancerAny: any = storeEnhancer;
   const enhancer = anotherEnhancer
-    ? redux.compose(storeEnhancer, anotherEnhancer)
-    : storeEnhancer;
+    ? redux.compose(storeEnhancerAny, anotherEnhancer)
+    : storeEnhancerAny;
   return redux.createStore<S, A, Ext, StateExt>(
     reducer as any,
     initialState,
-    enhancer as any,
+    enhancer,
   );
 }

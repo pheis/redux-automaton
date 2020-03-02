@@ -1,5 +1,3 @@
-import * as redux from 'redux';
-
 import * as automaton from '../src';
 
 type State = { value: number };
