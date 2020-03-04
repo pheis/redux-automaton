@@ -1,15 +1,21 @@
 {
   "name": "redux-automaton",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "typigs": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
     "test": "jest"
   },
-  "author": "",
+  "author": "Pyry Heiskanen",
   "license": "ISC",
   "peerDepedencies": {
     "redux": "^4.0.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pheis/redux-automaton.git"
   },
   "devDependencies": {
     "@types/jest": "^25.1.3",
@@ -17,7 +23,6 @@
     "prettier": "^1.19.1",
     "redux": "^4.0.5",
     "redux-thunk": "^2.3.0",
-    "rxjs": "^6.5.4",
     "ts-jest": "^25.2.1",
     "typescript": "^3.8.3"
   }
