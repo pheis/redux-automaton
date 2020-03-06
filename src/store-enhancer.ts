@@ -17,38 +17,33 @@ function liftReducer<S, A extends redux.Action<any>>(
     return state;
   };
 }
-
-function liftDispatch<A extends redux.Action<any>>(
-  actionQueue: A[],
-  store: redux.Store<any, A>,
+export function storeEnhancer<S, A extends redux.Action<any>>(
+  next: redux.StoreCreator,
 ) {
-  return (action: A) => {
-    // Populate actionQueue
-    const result = store.dispatch(action);
-    while (actionQueue.length) {
-      const nextAction = actionQueue.shift();
-      if (nextAction) {
-        store.dispatch(nextAction);
-      }
-    }
-    return result;
-  };
-}
-
-export function storeEnhancer<S, A extends redux.Action<any>>(next: any) {
-  return (reducer: Reducer<S, A>, initialState: S, enhancer: any) => {
+  return (
+    reducer: Reducer<S, A>,
+    initialState: redux.PreloadedState<S>,
+    enhancer: any,
+  ) => {
     const actionQueue: any[] = [];
     const store = next(
       liftReducer(actionQueue, reducer),
       initialState,
       enhancer,
     );
+    store.subscribe(() => {
+      while (actionQueue.length) {
+        const nextAction = actionQueue.shift();
+        if (nextAction) {
+          store.dispatch(nextAction);
+        }
+      }
+    });
     const replaceReducer: any = (reducer: any) => {
       return store.replaceReducer(liftReducer(actionQueue, reducer));
     };
     return {
       ...store,
-      dispatch: liftDispatch(actionQueue, store),
       replaceReducer,
     };
   };

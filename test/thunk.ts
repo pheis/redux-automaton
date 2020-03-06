@@ -42,4 +42,29 @@ describe('thunk', () => {
     const state = store.getState();
     expect(state.value).toEqual(10);
   });
+  it('thunks, loop, reduces', () => {
+    const toC: any = (dispatch: any) => dispatch({ type: '->C' });
+    const toD: any = (dispatch: any) => dispatch({ type: '->D' });
+    type S = 'A' | 'B' | 'C' | 'D';
+    type A = { type: '->B' | '->C' | '->D' };
+    const r: automaton.Reducer<S, A> = (s = 'A', a) => {
+      if (s === 'A' && a.type === '->B') {
+        return automaton.loop('B', toC);
+      }
+      if (s === 'B' && a.type === '->C') {
+        return automaton.loop('C', toD);
+      }
+      if (s === 'C' && a.type === '->D') {
+        return 'D';
+      }
+      return s;
+    };
+    const store = automaton.createStore(
+      r,
+      'A' as const,
+      redux.applyMiddleware(thunk),
+    );
+    store.dispatch({ type: '->B' });
+    expect(store.getState()).toEqual('D');
+  });
 });
