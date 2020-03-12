@@ -1,32 +1,29 @@
 import * as redux from 'redux';
 import { Reducer } from './store-enhancer';
-import { liftState, loop } from './loop';
+import { liftState, loop, Loop } from './loop';
 
-type ReducerMapObject<
-  K extends string,
-  S extends { [Key in K]: any },
+type Mapping<
+  K extends string | number | symbol,
   A extends redux.Action<any>
 > = {
-  [Key in K]: Reducer<S[Key], A>;
+  [Key in K]: (s: any, action: A) => any;
 };
 
-type State<
-  K extends string,
-  S extends { [Key in K]: any },
-  A extends redux.Action<any>
-> = {
-  [Key in K]: Parameters<ReducerMapObject<K, S, A>[Key]>[0];
-};
+type InferState<A> = A extends Loop<infer B, any> ? B : A;
+type InferAction<M> = M extends Mapping<any, infer A> ? A : redux.Action;
 
 export function combineReducers<
+  Action extends redux.Action,
   K extends string,
-  S extends { [Key in K]: any },
-  A extends redux.Action<any>
->(reducerMapObject: ReducerMapObject<K, S, A>): Reducer<State<K, S, A>, A> {
-  return (state: State<K, S, A> | undefined, action: A) => {
-    const keys: K[] = Object.keys(reducerMapObject) as K[];
-    let combinedState: Partial<State<K, S, A>> = {};
-    let actions: A[] = [];
+  M extends Mapping<K, Action>,
+  State extends { [k in keyof M]: InferState<ReturnType<M[k]>> }
+>(reducerMapObject: M): Reducer<State, InferAction<M>> {
+  return (state: State | undefined, action: InferAction<M>) => {
+    const keysAny: any = Object.keys(reducerMapObject);
+    const keys: Array<keyof M> = keysAny;
+
+    let combinedState: Partial<State> = {};
+    let actions: InferAction<M>[] = [];
     for (const key of keys) {
       const prevState = !!state ? state[key] : undefined;
       const reducer = reducerMapObject[key];
@@ -34,12 +31,12 @@ export function combineReducers<
         state: nextState,
         actions: nextActions,
       }: {
-        state: State<K, S, A>[K];
-        actions: A[];
-      } = liftState(reducer(prevState, action));
+        state: State[keyof State];
+        actions: InferAction<M>[];
+      } = liftState(reducer(prevState, action as any));
       combinedState[key] = nextState;
       actions.push(...nextActions);
     }
-    return loop(combinedState as State<K, S, A>, ...actions);
+    return loop(combinedState as State, ...actions);
   };
 }
